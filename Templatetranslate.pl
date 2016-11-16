@@ -255,8 +255,11 @@ sub scan_template {
     reconnect();
 # https://sv.wikipedia.org/w/api.php?action=query&list=embeddedin&eititle=Template:Cite%20book&einamespace=0&eifilterredir=nonredirects
 # select COUNT(*) FROM templatelinks WHERE tl_title like 'Cite_book';
-    my $sth = $dbh->prepare(qq!SELECT page_id, page_title, MAX(rev_timestamp) AS rev_timestamp FROM templatelinks LEFT JOIN page ON page.page_id = templatelinks.tl_from LEFT JOIN revision ON page.page_id = revision.rev_page WHERE tl_namespace = ? AND tl_title LIKE ? AND rev_timestamp > ? AND page_namespace = ? GROUP BY page_id ORDER BY MAX(rev_timestamp) ASC LIMIT 1000!);
+    #    my $sth = $dbh->prepare(qq!SELECT page_id, page_title, MAX(rev_timestamp) AS rev_timestamp FROM templatelinks LEFT JOIN page ON page.page_id = templatelinks.tl_from LEFT JOIN revision ON page.page_id = revision.rev_page WHERE tl_namespace = ? AND tl_title LIKE ? AND rev_timestamp > ? AND page_namespace = ? GROUP BY page_id ORDER BY MAX(rev_timestamp) ASC LIMIT 1000!);
 
+    my $sth = $dbh->prepare(qq!SELECT MAX(rev_timestamp) AS rev_timestamp, page_title, page_id FROM revision LEFT JOIN page on page_id = rev_page WHERE rev_timestamp > ? AND page_namespace = ? GROUP BY page_id ORDER BY MAX(rev_timestamp) ASC LIMIT 10000!);
+    my $sthtmpl = $dbh->prepare(qq!SELECT * FROM templatelinks WHERE tl_title LIKE ? AND tl_namespace = ? AND tl_from = ?!);
+    
     my $sth_tssel = $dbhp->prepare(qq!SELECT MAX(timestamp) FROM translatetemplate WHERE template = ?!);
 
     my $sth_sel = $dbhp->prepare(qq!SELECT * FROM translatetemplate WHERE page_id = ? AND template LIKE ? AND error = ?!);
@@ -268,15 +271,22 @@ sub scan_template {
     foreach my $origintemplate (@{$settings->{templatename_en}}) {
 	$sth_tssel->execute($origintemplate);
 	my $lastts = $sth_tssel->fetchrow_array() || 0;
-
+	
 	warn "$origintemplate - starting from TS: $lastts" if($debug);
 
-	$sth->execute(10, $origintemplate, $lastts, 0);
+	my $refs;
+	$sth->execute($lastts, 0);
+	while(my $refrev = $sth->fetchrow_hashref()) {
+	    $sthtmpl->execute($origintemplate, 10, $refrev->{page_id});
+	    if($sthtmpl->rows()) {
+		push @{$refs}, $refrev;
+	    }
+	}
 
 	my $tmpl_wous = $origintemplate;
 	$tmpl_wous =~s/\_/\ /g;
 
-	while(my $ref = $sth->fetchrow_hashref()) {
+	foreach my $ref (@{$refs}) {
 	    reconnect();
 #	    warn "sth sel: $ref->{page_id}, $origintemplate";
 	    $sth_sel->execute($ref->{page_id}, $origintemplate, 0);
