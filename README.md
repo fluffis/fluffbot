@@ -1,0 +1,2 @@
+# fluffbot
+Fluffbot scripts
