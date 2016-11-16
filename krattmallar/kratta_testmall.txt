@@ -1,0 +1,9 @@
+﻿<noinclude>
+Den här mallen är fri att använda för tester av [[Wikipedia:Mallar|mallar]].
+
+Testmallen återställs automatiskt varje natt av en [[User:Fluffbot|robot]], vid behov även på andra tider (manuellt), så testmallen är i första hand till för relativt korta tester. 
+
+För längre tester rekommenderas att göra en [[Wikipedia:Undersidor|undersida]] till den egna användarsidan. Detta kan man naturligtvis göra även för kortare tester.
+
+
+[[Kategori:Wikipedia:Sandlådan]]</noinclude>

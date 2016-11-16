@@ -24,7 +24,7 @@ use Encode;
 my $bot = Perlwikipedia->new("fluffbot");
 my $debug = 1;
 
-my $filepath = "/data/project/perfectbot/Fluffbot";
+my $filepath = "/data/project/perfectbot/Fluffbot/krattmallar/";
 
 $bot->set_wiki("sv.wikipedia.org", "w");
 
