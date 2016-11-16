@@ -31,6 +31,9 @@ use JSON::PP;
 
 use Getopt::Long;
 
+use utf8;
+binmod STDOUT ":utf8";
+
 # 2do
 # Borde testa om mallen har blivit översatt.
 # Need to glue together when a template contains a template.
@@ -255,9 +258,8 @@ sub scan_template {
     reconnect();
 # https://sv.wikipedia.org/w/api.php?action=query&list=embeddedin&eititle=Template:Cite%20book&einamespace=0&eifilterredir=nonredirects
 # select COUNT(*) FROM templatelinks WHERE tl_title like 'Cite_book';
-    #    my $sth = $dbh->prepare(qq!SELECT page_id, page_title, MAX(rev_timestamp) AS rev_timestamp FROM templatelinks LEFT JOIN page ON page.page_id = templatelinks.tl_from LEFT JOIN revision ON page.page_id = revision.rev_page WHERE tl_namespace = ? AND tl_title LIKE ? AND rev_timestamp > ? AND page_namespace = ? GROUP BY page_id ORDER BY MAX(rev_timestamp) ASC LIMIT 1000!);
 
-    my $sth = $dbh->prepare(qq!SELECT MAX(rev_timestamp) AS rev_timestamp, page_title, page_id FROM revision LEFT JOIN page on page_id = rev_page WHERE rev_timestamp > ? AND page_namespace = ? GROUP BY page_id ORDER BY MAX(rev_timestamp) ASC LIMIT 10000!);
+    my $sth = $dbh->prepare(qq!SELECT MAX(rev_timestamp) AS rev_timestamp, page_title, page_id FROM revision LEFT JOIN page on page_id = rev_page WHERE rev_timestamp > ? AND page_namespace = ? GROUP BY page_id ORDER BY MAX(rev_timestamp) ASC LIMIT 5000!);
     my $sthtmpl = $dbh->prepare(qq!SELECT * FROM templatelinks WHERE tl_title LIKE ? AND tl_namespace = ? AND tl_from = ?!);
     
     my $sth_tssel = $dbhp->prepare(qq!SELECT MAX(timestamp) FROM translatetemplate WHERE template = ?!);
@@ -328,7 +330,11 @@ sub scan_template {
                         }
 			next;
 		    }
-		    print diff \$orgtext, \$newtext;
+
+		    my $colororgtext = $orgtext;
+		    $colororgtext =~ s/(\{\{$tmpl_wous)/\e\[43m\e\[30m$1\e\[0m/g;
+		    
+		    print diff \$colororgtext, \$newtext;
 		    my $editsum = "\x{d6}vers\x{e4}tter k\x{e4}llmall: [[Mall:$tmpl_wous]]";
 		    print "\n";
 		    print ":: $editsum";
