@@ -332,7 +332,7 @@ sub scan_template {
 		    }
 
 		    my $colororgtext = $orgtext;
-		    $colororgtext =~ s/(\{\{$tmpl_wous)/\e\[43m\e\[30m$1\e\[0m/g;
+		    $colororgtext =~ s/(\{\{$tmpl_wous)/\e\[43m\e\[30m$1\e\[0m/gi;
 		    
 		    print diff \$colororgtext, \$newtext;
 		    my $editsum = "\x{d6}vers\x{e4}tter k\x{e4}llmall: [[Mall:$tmpl_wous]]";
