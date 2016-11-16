@@ -32,7 +32,7 @@ use JSON::PP;
 use Getopt::Long;
 
 use utf8;
-binmod STDOUT ":utf8";
+binmode STDOUT ":utf8";
 
 # 2do
 # Borde testa om mallen har blivit översatt.
