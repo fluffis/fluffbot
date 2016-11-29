@@ -53,7 +53,7 @@ for("Kvinnor", "Män", "Personer med alternativ könsidentitet") {
     if($sth->rows()) {
 	while(my $title = $sth->fetchrow_array()) {
 	    $title =~ s/\_/\ /g;
-	    $title = Encode::encode("iso-8859-1", Encode::decode("utf-8", $title));
+	    $title = Encode::decode("utf-8", $title);
 	    push @result, $title;
 	    $text .= qq!* [[:$title|$title]]\n!;
 	}
