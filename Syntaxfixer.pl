@@ -126,7 +126,7 @@ foreach my $article (@articles) {
     $editedtext = error057($article, $editedtext);
     $editedtext = error064($article, $editedtext);
     $editedtext = error075($article, $editedtext);
-    $editedtext = error077($article, $editedtext);
+#    $editedtext = error077($article, $editedtext);
     $editedtext = error088($article, $editedtext);
 
     # Finishing up.
