@@ -76,11 +76,13 @@ foreach(sort yearsort keys %notborn) {
     
     foreach my $page (@{$notborn{$_}}) {
 	$sth->execute($page, 0);
-	my $pagetitle = $sth->fetchrow_array();
-	$pagetitle =~ s/\_/\ /g;
-	next if($pagetitle =~ /^Avlidna/);
-	$cattext .= "* [[:$pagetitle]]\n";
-	$i++;
+	if($sth->rows()) {
+	    my $pagetitle = $sth->fetchrow_array();
+	    $pagetitle =~ s/\_/\ /g;
+	    next if($pagetitle =~ /^Avlidna/);
+	    $cattext .= "* [[:$pagetitle]]\n";
+	    $i++;
+	}
     }
     $pagetext .= $cattext if($i);
 }
@@ -107,10 +109,10 @@ sub yearsort {
     my $bnum = $1;
 
     if($a =~ /ok\x{e4}nt\ \x{f5}r/) {
-	$anum = 9999;
+	$anum = -9999;
     }
     if($b =~ /ok\x{e4}nt\ \x{e5}r/) {
-	$bnum = 9999;
+	$bnum = -9999;
     }
     
 
