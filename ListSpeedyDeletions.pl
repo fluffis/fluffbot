@@ -73,6 +73,7 @@ my @result;
 $sth->execute("Snabbraderingar");
 if($sth->rows()) {
     while(my ($ns, $title) = $sth->fetchrow_array()) {
+	next if(!$title);
 	$title =~ s/\_/\ /g;
 	$title = Encode::decode("utf-8", $title);
 	push @result, $title;
