@@ -21,6 +21,7 @@ use lib "/data/project/perfectbot/Fluffbot/perlwikipedia-fluff/lib";
 
 use DBI;
 use Data::Dumper;
+use Encode;
 use Perlwikipedia;
 
 require '/data/project/perfectbot/Fluffbot/common.pl';
@@ -73,7 +74,7 @@ foreach my $fcat(@borncats) {
 
 $sth = $dbh->prepare(qq!SELECT page_namespace, page_title FROM page WHERE page_id = ?!);
 my $curcat = "";
-my $pagetext = "Detta är en lista över personer kategoriserade som både födda och avlidna och där differensen indikerar att de blev äldre än 100 år. Detta gäller enbart födda efter år 1000. Listan uppdaterades senast den " . getwikidate() . "\n\n";
+my $pagetext = "Detta är en lista över personer födda efter år 1000 som är kategoriserade som både födda och avlidna och där differensen indikerar att de blev äldre än 100 år. Listan uppdaterades senast den " . getwikidate() . "\n\n";
 
 foreach(sort {$a->[4] - $a->[3] <=> $b->[4] - $b->[3] } @interesting) {
     $sth->execute($_->[0]);
@@ -86,11 +87,8 @@ foreach(sort {$a->[4] - $a->[3] <=> $b->[4] - $b->[3] } @interesting) {
 	$pagetext .= "* [[:$ns{$pagens}:$pagetitle]]";
     }
 
-    $pagetext .= "([[:Kategori:$_->[1]|$_->[3]]] - [[:Kategori:$_->[2]|$_->[4]]], dvs ca " . ($_->[4] - $_->[3]) . " år)\n";
+    $pagetext .= " ([[:Kategori:$_->[1]|$_->[3]]] - [[:Kategori:$_->[2]|$_->[4]]], dvs ca " . ($_->[4] - $_->[3]) . " år)\n";
 }
 
-print utftoiso($pagetext);
-print "\n---\n";
-print $pagetext;
 
-#$bot->edit("User:Fluffbot/Folk \x{f6}ver 100 \x{e5}r", utftoiso($pagetext), "Uppdaterar listan");
+$bot->edit("User:Fluffbot/Folk \x{f6}ver 100 \x{e5}r", Encode::decode("utf-8", $pagetext), "Uppdaterar listan");
