@@ -63,7 +63,7 @@ foreach my $fcat (@goodcats) {
     }
 }
 
-$sth = $dbh->prepare(qq!SELECT page_title FROM page WHERE page_id = ?!);
+$sth = $dbh->prepare(qq!SELECT page_title FROM page WHERE page_id = ? AND page_namespace = ?!);
 my $pagetext = "Detta är en lista över sidor som har en kategori för när de avled men inte när de föddes. Borde kanske införas i [[:Kategori:Födda okänt år]]?\n\n";
 
 foreach(sort yearsort keys %notborn) {
@@ -75,7 +75,7 @@ foreach(sort yearsort keys %notborn) {
     $cattext = "\n===Kategori [[:Kategori:$_|$curcatname]]===\n";
     
     foreach my $page (@{$notborn{$_}}) {
-	$sth->execute($page);
+	$sth->execute($page, 0);
 	my $pagetitle = $sth->fetchrow_array();
 	$pagetitle =~ s/\_/\ /g;
 	next if($pagetitle =~ /^Avlidna/);
