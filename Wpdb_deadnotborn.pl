@@ -20,6 +20,7 @@ use lib "/data/project/perfectbot/Fluffbot/perlwikipedia-fluff/lib";
 
 use DBI;
 use Data::Dumper;
+use Encode;
 use Perlwikipedia;
 
 require '/data/project/perfectbot/Fluffbot/common.pl';
@@ -84,7 +85,7 @@ foreach(sort yearsort keys %notborn) {
     $pagetext .= $cattext if($i);
 }
 
-$bot->edit("User:Fluffbot/Avlidna men inte f\x{f6}dda", utftoiso($pagetext), "Uppdaterar listan");
+$bot->edit("User:Fluffbot/Avlidna men inte f\x{f6}dda", Encode::decode("utf-8", $pagetext), "Uppdaterar listan");
 
 
 
@@ -105,6 +106,13 @@ sub yearsort {
     $b =~ /(\d+)/;
     my $bnum = $1;
 
+    if($a =~ /ok\x{e4}nt\ \x{f5}r/) {
+	$anum = 9999;
+    }
+    if($b =~ /ok\x{e4}nt\ \x{e5}r/) {
+	$bnum = 9999;
+    }
+    
 
     if($a =~ /\-talet/) {
 	$anum -= .5;
