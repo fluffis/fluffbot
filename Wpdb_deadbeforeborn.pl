@@ -73,8 +73,8 @@ foreach my $fcat(@borncats) {
 }
 
 $sth = $dbh->prepare(qq!SELECT page_namespace, page_title FROM page WHERE page_id = ?!);
-my $curcat = "";
-my $pagetext = "Detta är en lista över personer födda efter år 1000 som har en födelsekategori som anger att de är födda efter de avled (eller avled innan de föddes). Listan uppdaterades senast den " . getwikidate() . "\n\n";
+
+my $pagetext = "Detta är en lista över personer födda efter år 1000 som har en födelsekategori som anger att de är födda efter de avled (eller avled innan de föddes). Listan uppdaterades senast den " . getwikidate() . ".\n\n";
 
 foreach(sort { $a->[3] <=> $b->[3] } @interesting) {
     $sth->execute($_->[0]);
@@ -87,7 +87,7 @@ foreach(sort { $a->[3] <=> $b->[3] } @interesting) {
 		$pagetext .= "* [[:$ns{$pagens}:$pagetitle]]";
     }
 
-    $pagetext .= " ([[:Kategori:$_->[1]]] - [[:Kategori:$_->[2]]])\n";
+    $pagetext .= " ([[:Kategori:$_->[1]|$_->[3]]] - [[:Kategori:$_->[2]|$_->[4]]])\n";
 }
 
 
