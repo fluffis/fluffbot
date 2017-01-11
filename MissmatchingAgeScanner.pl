@@ -58,7 +58,7 @@ my $r = XML::LibXML::Reader->new({FD => fileno(STDIN), schema => 'http://www.med
 my $pageout = "";
 $pageout .= qq!Denna sida är skapad utifrån databasdumpen som togs den ! . getwikidate() . qq!, redigeringar efter detta datum reflekteras inte i denna tabell.\n\n!;
 
-$pageout .= qq!Roboten försöker identifiera vilket år som anges som födelse- respektive dödsår i artikelns brödtext och jämför sedan med kategoriseringen i Kategori:Födda och Kategori:Avlidna. Om detta inte stämmer överens så listas personen i tabellen nedan. Observera att identifieringen av årtal i brödtexten är svår och kan ge en hel del felaktiga indikationer.\n\n!
+$pageout .= qq!Roboten försöker identifiera vilket år som anges som födelse- respektive dödsår i artikelns brödtext och jämför sedan med kategoriseringen i Kategori:Födda och Kategori:Avlidna. Om detta inte stämmer överens så listas personen i tabellen nedan. Observera att identifieringen av årtal i brödtexten är svår och kan ge en hel del felaktiga indikationer.\n\n!;
 
 $pageout .= qq!{|class="wikitable"\n!;
 $pageout .= "! Artikel || Född (artikeltext) || F. år text || F. år kat || Avliden (artikeltext) || D. år text || D. år kat\n";
@@ -179,7 +179,7 @@ sub scan {
 
 	$katborn = $2 if($text =~ /\[\[kategori\:\ *F\x{f6}dda(\ |\_)(\d{4})(\||\]|\ )/i);
 	
-	if($text =~ /(.{0,20}(?<!\{)(avliden|död)\b(?:(?!\d\d\d\d).){0,40}(\d{4}).{0,20})/i) {
+	if($text =~ /(.{0,20}(?<!\{)(avliden|avled|död)\b(?:(?!\d\d\d\d).){0,40}(\d{4}).{0,20})/i) {
 		$textdead = $3;
 		$deadcontext = $1;
 	}
