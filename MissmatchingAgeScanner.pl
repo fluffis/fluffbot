@@ -29,6 +29,7 @@ use Digest::MD5 qw(md5_base64);
 use Encode qw(encode_utf8);
 use Perlwikipedia;
 
+require '/data/project/perfectbot/Fluffbot/common.pl';
 
 my $bot = Perlwikipedia->new("fluffbot");
 $bot->set_wiki("sv.wikipedia.org", "w");
@@ -54,14 +55,18 @@ foreach my $row (split(/\n/, $text_falsepos)) {
 
 my $r = XML::LibXML::Reader->new({FD => fileno(STDIN), schema => 'http://www.mediawiki.org/xml/export-0.10/'});
 
-open(my $out, ">:encoding(utf8)", "/data/project/perfectbot/suspects.txt") || die("Unable to open file: $!");
-print $out chr(0xFEFF);
-print $out qq!{|class="wikitable"\n!;
-print $out "! Artikel || Född (artikeltext) || F. år text || F. år kat || Avliden (artikeltext) || D. år text || D. år kat\n";
-print $out "|-";
+my $pageout = "";
+$pageout .= qq!Denna sida är skapad utifrån databasdumpen som togs den ! . getwikidate() . qq!, redigeringar efter detta datum reflekteras inte i denna tabell.\n\n!;
+
+$pageout .= qq!Roboten försöker identifiera vilket år som anges som födelse- respektive dödsår i artikelns brödtext och jämför sedan med kategoriseringen i Kategori:Födda och Kategori:Avlidna. Om detta inte stämmer överens så listas personen i tabellen nedan. Observera att identifieringen av årtal i brödtexten är svår och kan ge en hel del felaktiga indikationer.\n\n!
+
+$pageout .= qq!{|class="wikitable"\n!;
+$pageout .= "! Artikel || Född (artikeltext) || F. år text || F. år kat || Avliden (artikeltext) || D. år text || D. år kat\n";
+$pageout .= "|-";
 
 my $c = 0;
 my $f = 0;
+my @articlerows;
 while($r->read()) {
 
 	if($r->name() eq "page") {
@@ -71,11 +76,15 @@ while($r->read()) {
 		warn "$c pages processed, $f suspects found." if($c % 10000 == 0);
 	}
 }
-
-print $out "|}\n";
-
 $r->close();
-close($out);
+
+foreach my $row (sort @articlerows) {
+	$pageout .= $row . "\n";
+}
+
+$pageout .= "|}\n";
+$bot->edit("User:Fluffbot/Misstänkt_felaktigt_födelse_eller_dödsår", Encode::decode("utf8", $pageout), "Uppdaterar lista");
+
 
 $text_falsepos_new .= "<!-- MARK -->\n";
 foreach my $row (split(/\n/, $text_falsepos)) {
@@ -86,8 +95,9 @@ foreach my $row (split(/\n/, $text_falsepos)) {
 	}
 }
 
-
 $bot->edit("User:Fluffbot/Misstänkt_felaktigt_födelse_eller_dödsår/Falska_träffar", Encode::decode("utf8", $text_falsepos_new), "Tar bort falska träffar där checksum har ändrats.");
+
+
 
 
 #####################################################
@@ -198,10 +208,12 @@ sub scan {
 		}
 	}
 	
-	my $row = qq!| [[$title]] <small>$digest</small> || <nowiki>$borncontext</nowiki> || $textborn || $katborn || <nowiki>$deadcontext</nowiki> || $textdead || $katdead\n!;
-		
-	print $out $row;
-	print $out "|-\n";
+	my $bornstyle = "";
+	$bornstyle = " #C70039" if($textborn != $katborn);
+	my $deadstyle = "";
+	$deadstyle = " #C70039" if($textdead != $katdead);
+	
+	push @articlerows, qq!| [[$title]] <small>$digest</small> || <nowiki>$borncontext</nowiki> | $bornstyle | $textborn | $bornstyle | $katborn || <nowiki>$deadcontext</nowiki> | $deadstyle | $textdead | $deadstyle | $katdead\n|-\n!;
 	
 	return 1;
 }
