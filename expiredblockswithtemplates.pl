@@ -27,7 +27,8 @@ use Data::Dumper;
 use LWP::UserAgent;
 use DBI;
 use JSON::XS;
-use Net::IP qw(:PROC);
+
+binmode STDOUT, ":utf8";
 
 require 'common.pl';
 
@@ -111,4 +112,34 @@ sub byusername {
     my $bt = $bver < 8 ? "$bver|" . ip_iptobin($b, $bver) : "8|$b";
 
     return $at cmp $bt;
+}
+
+sub ip_get_version {
+    my $address = shift;
+
+    if($address =~ /^(([01]?\d\d?|2[0-4]\d|25[0-5])\.){3}([01]?\d\d?|2[0-4]\d|25[0-5])$/) {
+	return 4;
+    }
+    elsif($address =~ /^([0-9a-f]{1,4}:){7}([0-9a-f]){1,4}$/) {
+	return 6;
+    }
+    else {
+	return undef;
+    }
+
+}
+
+sub ip_iptobin {
+    my $address = shift;
+    my $version = shift;
+
+    if ($version == 4) {
+        return unpack('B32', pack('C4C4C4C4', split(/\./, $address)));
+    }
+
+    $address =~ s/://g;
+
+    if(length($address) == 32) {
+	return unpack('B128', pack('H32', $address));
+    }
 }
