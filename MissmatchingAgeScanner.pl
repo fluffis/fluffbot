@@ -62,7 +62,7 @@ $pageout .= qq!Roboten försöker identifiera vilket år som anges som födelse-
 
 $pageout .= qq!{|class="wikitable"\n!;
 $pageout .= "! Artikel || Född (artikeltext) || F. år text || F. år kat || Avliden (artikeltext) || D. år text || D. år kat\n";
-$pageout .= "|-";
+$pageout .= "|-\n";
 
 my $c = 0;
 my $f = 0;
@@ -83,7 +83,7 @@ foreach my $row (sort @articlerows) {
 }
 
 $pageout .= "|}\n";
-$bot->edit("User:Fluffbot/Misstänkt_felaktigt_födelse_eller_dödsår", Encode::decode("utf8", $pageout), "Uppdaterar lista");
+$bot->edit("User:Fluffbot/Misstänkt_felaktigt_födelse_eller_dödsår", $pageout, "Uppdaterar lista");
 
 
 $text_falsepos_new .= "<!-- MARK -->\n";
@@ -95,7 +95,7 @@ foreach my $row (split(/\n/, $text_falsepos)) {
 	}
 }
 
-$bot->edit("User:Fluffbot/Misstänkt_felaktigt_födelse_eller_dödsår/Falska_träffar", Encode::decode("utf8", $text_falsepos_new), "Tar bort falska träffar där checksum har ändrats.");
+$bot->edit("User:Fluffbot/Misstänkt_felaktigt_födelse_eller_dödsår/Falska_träffar", $text_falsepos_new, "Tar bort falska träffar där checksum har ändrats.");
 
 
 
@@ -209,11 +209,11 @@ sub scan {
 	}
 	
 	my $bornstyle = "";
-	$bornstyle = " #C70039" if($textborn != $katborn);
+	$bornstyle = qq!style="color:#C70039"! if($textborn != $katborn);
 	my $deadstyle = "";
-	$deadstyle = " #C70039" if($textdead != $katdead);
+	$deadstyle = qq!style="color:#C70039"! if($textdead != $katdead);
 	
-	push @articlerows, qq!| [[$title]] <small>$digest</small> || <nowiki>$borncontext</nowiki> | $bornstyle | $textborn | $bornstyle | $katborn || <nowiki>$deadcontext</nowiki> | $deadstyle | $textdead | $deadstyle | $katdead\n|-\n!;
+	push @articlerows, qq!| [[$title]] <small>$digest</small>\n|| <nowiki>$borncontext</nowiki>\n|$bornstyle| $textborn\n|$bornstyle| $katborn\n|| <nowiki>$deadcontext</nowiki>\n|$deadstyle| $textdead\n|$deadstyle| $katdead\n|-\n!;
 	
 	return 1;
 }
