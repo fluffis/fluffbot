@@ -85,7 +85,8 @@ foreach(sort byusername @allips) {
     foreach(split(/\n/, `whois $_`)) {
         /^([^\:]+)\:\ *(.*)/;
 	if($1 eq "descr") {
-	    push @descr, Encode::encode("utf-8", $2);
+	    my $val = $2;
+	    push @descr, Encode::encode("utf-8", $val) unless($val =~ /(\#|\-|\*){5,}/);
 	}
 	if($1 eq "inetnum") {
 	    $inetnum = $2;
