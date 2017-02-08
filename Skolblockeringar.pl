@@ -1,8 +1,7 @@
 #!/usr/bin/perl
 
-# Lists users who's talk-pages contain a template that indicate an active block
-# but the block has expired (the user is no longer blocked.)
-# Copyright (C) User:Fluff 2013
+# List users with template {{läsårsblockering}}
+# Copyright (C) User:Fluff 2017
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,6 +24,8 @@ use Perlwikipedia;
 use Encode;
 use Data::Dumper;
 use LWP::UserAgent;
+use Time::Piece;
+use Time::Seconds;
 use DBI;
 use JSON::XS;
 
@@ -65,50 +66,104 @@ foreach my $templ (@{$templates->{templates}}) {
 	push @allips, $ip unless(grep {$ip eq $_ } @allips);
     }
 }
+
+my $sth = $dbh->prepare(qq!SELECT TIMESTAMPDIFF(SECOND, ?, ?)!);
 my $networkpages;
 foreach(sort byusername @allips) {
-    my $ippage = "";
-    $ippage .= "==== [[User:$_|$_]] ====\n";
-    $ippage .= "* [[User talk:$_|Diskussion]]\n";
-    $ippage .= "* [[Special:Bidrag/$_|Bidrag]]\n";
+    my $ippage = "|-\n";
+    $ippage .= "| [[User:$_|$_]] ||";
+    $ippage .= " [[User talk:$_|Diskussion]] ||";
+    $ippage .= " [[Special:Bidrag/$_|Bidrag]] ||";
 
     my $talkpage = Encode::encode("utf-8", $bot->get_text("User talk:$_"));
     if($talkpage =~ /\{\{ip\|([^\}]+)\}\}/i) {
-	$ippage .= "* IP-mall: $1\n";
+	$ippage .= "$1 ||";
     }
     else {
-	$ippage .= "* IP-mall: Saknas\n";
+	$ippage .= "Saknas ||";
     }
+
+    my @logevents = $bot->get_log_for_target("block", "now", "User:$_", "newer");
+
+    $ippage .= $#logevents + 1 . " ||";
+
+    my $blocks = "";
+    foreach my $le (@logevents) {
+	my $start = $le->{timestamp};
+	my $stop = $le->{params}->{expiry};
+
+	$start =~ s/(T|Z)/\ /g;
+	$stop =~ s/(T|Z)/\ /g;
+
+	$sth->execute($start, $stop);
+	my $seconds = $sth->fetchrow_array();
+	my $dur = Time::Seconds->new($seconds);
+	my $durtext = $dur->pretty;
+	$durtext =~ s/(\d+)\ years?/$1y/;
+	$durtext =~ s/(\d+)\ months?/$1mo/;
+	$durtext =~ s/(\d+)\ days?/$1d/;
+	$durtext =~ s/(\d+)\ hours?/$1h/;
+
+	$durtext =~ s/(\d+)\ minutes?/$1mi/;
+	$durtext =~ s/\d+\ seconds?//;
+
+	$durtext =~ s/[^0-9]0(h|mi)//g;
+	$durtext =~ s/\,\ ?\,/\,/g;
+	$durtext =~ s/\,\ ?$//g;
+
+	$blocks .= $durtext . "; ";
+    }
+
+    $blocks =~ s/\;\ $//;
+
+    $ippage .= "$blocks";
     
     my @descr;
     my $inetnum;
     foreach(split(/\n/, `whois $_`)) {
-        /^([^\:]+)\:\ *(.*)/;
-	if($1 eq "descr") {
-	    my $val = $2;
-	    push @descr, Encode::encode("utf-8", $val) unless($val =~ /(\#|\-|\*){5,}/);
-	}
-	if($1 eq "inetnum") {
-	    $inetnum = $2;
+        if(/^([^\:]+)\:\ *(.*)/) {
+	    if($1 eq "descr") {
+		my $val = $2;
+		push @descr, Encode::encode("utf-8", $val) unless($val =~ /(\#|\-|\*){5,}/);
+	    }
+	    if($1 eq "inetnum") {
+		$inetnum = $2;
+	    }
 	}
     }
-    $ippage .= "* WHOIS descr: " . join(", ", @descr) . "\n";
+    my $whoisdesc = join(", ", @descr);
 
-    push @{$networkpages->{$inetnum}}, $ippage;
+    $ippage .= "\n";
+
+    push @{$networkpages->{$inetnum}}, { page => $ippage, whois => $whoisdesc };
 
 }
+
+my @nets = keys %{$networkpages};
 
 my $pageh = qq!__NOTOC__\n\nDetta är en lista över användarsidor som har en av följande mallar: {{mall|Skolblockering}}, {{mall|Läsårsblockering}} eller {{mall|Lb}}. Listan uppdaterades senast: !;
 $pageh .= getwikidate();
+$pageh .= qq!. Totalt består listan av ! . ($#allips + 1) . qq! adresser fördelat på ! . ($#nets + 1) . qq! nät.!;
 $pageh .= qq!\n\n!;
 
 foreach my $net (sort bynetwork keys %{$networkpages}) {
-    $pageh .= "=== $net ===\n";
-    foreach(@{$networkpages->{$net}}) {
-	$pageh .= $_;
-    }
-}
 
+    my $table = "";
+    my $whois;
+    $pageh .= "=== $net ===\n";
+
+
+    foreach(@{$networkpages->{$net}}) {
+	$whois = $_->{whois};
+	$table .= $_->{page};
+    }
+    $pageh .= $whois . "\n";
+    $pageh .= "{| class=\"wikitable\"\n! Adress !! Bidrag !! Diskussion !! IP-mall !! # Block !! Blockeringshistorik \n|-\n";
+    $pageh .= $table;
+    $pageh .= "|}\n\n";
+
+}
+#print $pageh;
 $bot->edit("User:Fluffbot/Lista_\x{f6}ver_l\x{e4}s\x{e5}rsblockerade", Encode::decode("utf-8", $pageh), "Uppdaterar listan");
 
 sub byusername {
