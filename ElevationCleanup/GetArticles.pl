@@ -22,6 +22,9 @@ use DBI;
 use Data::Dumper;
 use Perlwikipedia;
 
+use utf8;
+#binmode STDOUT, ":utf8";
+
 require '/data/project/perfectbot/Fluffbot/common.pl';
 
 my $bot = Perlwikipedia->new("fluffbot");
@@ -35,7 +38,9 @@ $bot->login("Fluffbot", $pwd);
 
 my %ns = $bot->get_namespace_names();
 
-my $dbh = DBI->connect("dbi:mysql:mysql_read_default_file=/data/project/perfectbot/.my.cnf;host=svwiki.labsdb;database=svwiki_p", undef, undef, {RaiseError => 1, AutoCommit => 1});
+my $dbh = DBI->connect("dbi:mysql:mysql_read_default_file=/data/project/perfectbot/.my.cnf;host=svwiki.labsdb;database=svwiki_p", undef, undef, {RaiseError => 1, AutoCommit => 1, mysql_enable_utf8 => 1});
+my $sql = qq{SET NAMES 'utf8';};
+$dbh->do($sql);
 
 my @categories = GetRecursiveCategoryTree("Robotskapade_geografiartiklar");
 
@@ -68,7 +73,7 @@ sub GetArticlesFromCategory {
 
 	my $cat = shift;
 	my @pages;
-	my $sth = $dbh->prepare(qq!SELECT page_namespace, page_title FROM categorylinks LEFT JOIN page ON page_id = cl_from WHERE cl_to = ?!;
+	my $sth = $dbh->prepare(qq!SELECT page_namespace, page_title FROM categorylinks LEFT JOIN page ON page_id = cl_from WHERE cl_to = ?!);
 	$sth->execute($cat);
 	
 	

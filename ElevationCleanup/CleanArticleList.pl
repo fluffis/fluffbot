@@ -21,10 +21,9 @@ use lib "/data/project/perfectbot/Fluffbot/perlwikipedia-fluff/lib";
 use DBI;
 use Data::Dumper;
 use Perlwikipedia;
-use utf8;
-use Text::Diff;
 
-binmode STDOUT, ":utf8";
+use utf8;
+#binmode STDOUT, ":utf8";
 
 require '/data/project/perfectbot/Fluffbot/common.pl';
 
@@ -43,48 +42,48 @@ my $dbh = DBI->connect("dbi:mysql:mysql_read_default_file=/data/project/perfectb
 my $sql = qq{SET NAMES 'utf8';};
 $dbh->do($sql);
 
-open(INFILE, "<:encoding(UTF-8)", "activecategories") || die "Could not open active categories file: $!";
-my @categories;
-while(my $row = <INFILE>) {
+
+my $sth = $dbh->prepare(qq!select * from revision left join page on page_id = rev_page_id where rev_user = 66752 and rev_timestamp > '20170207220000' and rev_comment like 'Tar bort parametern elevation%' and page_title = ?!);
+
+open(INFILE, "<:encoding(UTF-8)", "<allarticles") || die("Could not open articles file: $!");
+while(my $row =<INFILE>) {
     chomp($row);
-    push @categories, $row;
+    $sth->execute($row);
+    if(!$sth->rows()) {
+	print $row . "\n";
+    }
 }
 close(INFILE);
-warn "Reading categories done";
 
-open(INFILE, "<:encoding(UTF-8)", "allarticles") || die "Could not open articles file: $!";
-my $row;
-my $sth = $dbh->prepare(qq!SELECT cl_to FROM categorylinks LEFT JOIN page ON page_id = cl_from WHERE page_title = ? AND page_namespace = 0!);
-while($row = <INFILE>) {
-        chomp($row);
-        print $row . "\n";
-        $sth->execute($row);
-        while(my $tocat = $sth->fetchrow_array()) {
-                if(grep { $tocat eq $_ } @categories) {
-                        # Match!
-                        RemoveElevation($row);
-			last;
-                }
+sub GetRecursiveCategoryTree {
+
+    my $cat = shift;
+    my @categories;
+    my $sth = $dbh->prepare(qq!SELECT page_id, page_namespace, page_title FROM categorylinks LEFT JOIN page ON page_id = cl_from WHERE cl_to = ?!);
+    $sth->execute($cat);
+
+    while(my $ref = $sth->fetchrow_hashref()) {
+        if($ref->{page_namespace} == 14) {
+            push @categories, GetRecursiveCategoryTree($ref->{page_title});
+            push @categories, $ref->{page_title};
         }
-
+    }
+    return @categories;
 }
 
-sub RemoveElevation {
-    my $article = shift;
+sub GetArticlesFromCategory {
 
-    my $orgtext = $bot->get_text($article);
-    my $newtext = $orgtext;
-
-    $newtext =~ s/(\|\s*elevation\s*\=\s*)(\d+)/\1/i;
-
-    print diff \$orgtext, \$newtext;
-    if($orgtext ne $newtext) {
-#	print "\nEdit? [Y/n] ";
-#	my $input = <STDIN>;
-#	chomp($input);
-#	if($input !~ /^n/i) {
-	$bot->edit($article, $newtext, "Tar bort parametern elevation från robotskapade artiklar");
-	sleep 3;
-#	}
-    }
+	my $cat = shift;
+	my @pages;
+	my $sth = $dbh->prepare(qq!SELECT page_namespace, page_title FROM categorylinks LEFT JOIN page ON page_id = cl_from WHERE cl_to = ?!);
+	$sth->execute($cat);
+	
+	
+	while(my $ref = $sth->fetchrow_hashref()) {
+		if($ref->{page_namespace} == 0) {
+			push @pages, $ref->{page_title};
+		}
+	}
+	
+	return @pages;
 }

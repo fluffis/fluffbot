@@ -21,7 +21,8 @@ use lib "/data/project/perfectbot/Fluffbot/perlwikipedia-fluff/lib";
 use DBI;
 use Data::Dumper;
 use Perlwikipedia;
-
+use utf8;
+binmode STDOUT, ":utf8";
 require '/data/project/perfectbot/Fluffbot/common.pl';
 
 my $bot = Perlwikipedia->new("fluffbot");
@@ -36,54 +37,28 @@ $bot->login("Fluffbot", $pwd);
 my %ns = $bot->get_namespace_names();
 
 my $dbh = DBI->connect("dbi:mysql:mysql_read_default_file=/data/project/perfectbot/.my.cnf;host=svwiki.labsdb;database=svwiki_p", undef, undef, {RaiseError => 1, AutoCommit => 1});
+my $sql = qq{SET NAMES 'utf8';};
+$dbh->do($sql);
 
 my @categories;
 
 #	push @categories, GetRecursiveCategoryTree("Berg_efter_land");
-for(qw(/Vattenfall_efter_land Vattendrag_efter_land Öar_efter_land Halvöar_efter_land Stränder_efter_land Dalar_efter_land/) {
+for(qw/Vattendrag_efter_land/) {
 
 	push @categories, GetRecursiveCategoryTree($_);
 	
 }
-open(INFILE, "<allarticles") || die "Could not open articles file: $!";
-my $row;
-my $sth = $dbh->prepare(qq!SELECT cl_to FROM category_link LEFT JOIN page ON page_id = cl_from WHERE page_title = ? AND page_namespace = 0!);
-while($row = <INFILE>) {
-	chomp($row);
-	$sth->execute($row);
-	while(my $tocat = $sth->fetchrow_array()) {
-		if(grep { $tocat eq $_ } @categories) {
-			# Match!
-			RemoveElevation($row);
-		}
-	}
-	
-}
 
-
-sub RemoveElevation {
-	my $article = shift;
-	
-	my $orgtext = $bot->get_text($article);
-	my $newtext = $orgtext;
-	
-	$newtext =~ s/(\|\s*elevation\s*\=)\s*)(\d+)/$1/i;
-	
-	print diff \$orgtext, \$newtext;
-	if($orgtext ne $newtext) {
-		print "\nEdit? [Y/n] ";
-		my $input = <STDIN>;
-		chomp($input);
-		if($input !~ /^n/i) {
-			$bot->edit($article, $newtext, "Tar bort parametern elevation från robotskapade artiklar");
-		}
-	}
+foreach my $cat (sort @categories) {
+    print $cat . "\n";
 }
 
 
 sub GetRecursiveCategoryTree {
 
     my $cat = shift;
+
+    warn $cat;
     my @categories;
     my $sth = $dbh->prepare(qq!SELECT page_id, page_namespace, page_title FROM categorylinks LEFT JOIN page ON page_id = cl_from WHERE cl_to = ?!);
     $sth->execute($cat);
@@ -101,7 +76,7 @@ sub GetArticlesFromCategory {
 
 	my $cat = shift;
 	my @pages;
-	my $sth = $dbh->prepare(qq!SELECT page_namespace, page_title FROM categorylinks LEFT JOIN page ON page_id = cl_from WHERE cl_to = ?!;
+	my $sth = $dbh->prepare(qq!SELECT page_namespace, page_title FROM categorylinks LEFT JOIN page ON page_id = cl_from WHERE cl_to = ?!);
 	$sth->execute($cat);
 	
 	
