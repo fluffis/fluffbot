@@ -108,10 +108,10 @@ sub yearsort {
     $b =~ /(\d+)/;
     my $bnum = $1;
 
-    if($a =~ /ok\x{e4}nt\ \x{f5}r/) {
+    if($a !~ /\d/) {
 	$anum = -9999;
     }
-    if($b =~ /ok\x{e4}nt\ \x{e5}r/) {
+    if($b !~ /\d/) {
 	$bnum = -9999;
     }
     
