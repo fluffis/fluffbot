@@ -77,7 +77,7 @@ if($sth->rows()) {
 	$title =~ s/\_/\ /g;
 	$title = Encode::decode("utf-8", $title);
 	push @result, $title;
-	$text .= qq!* [[:$namespaces{$ns}$title|$title]]\n!;
+	$text .= qq!* {{ejomdirigering|$namespaces{$ns}$title|$namespaces{$ns}$title}}\n!;
     }
 }
 
