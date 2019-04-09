@@ -224,7 +224,7 @@ sub scan {
 	my $deadstyle = "";
 	$deadstyle = qq!style="color:#C70039"! if($textdead != $katdead);
 	
-	push @articlerows, qq!| [[$title]] <small>$digest</small>\n|| <nowiki>$borncontext</nowiki>\n|$bornstyle| $textborn\n|$bornstyle| $katborn\n|| <nowiki>$deadcontext</nowiki>\n|$deadstyle| $textdead\n|$deadstyle| $katdead\n|-\n!;
+	push @articlerows, qq!| [[$title]]\n<small><nowiki>[[$title]]</nowiki> $digest</small>\n|| <nowiki>$borncontext</nowiki>\n|$bornstyle| $textborn\n|$bornstyle| $katborn\n|| <nowiki>$deadcontext</nowiki>\n|$deadstyle| $textdead\n|$deadstyle| $katdead\n|-\n!;
 	
 	return 1;
 }
