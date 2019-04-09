@@ -20,27 +20,26 @@
 use strict;
 use warnings;
 
-use lib "/data/project/perfectbot/Fluffbot/perlwikipedia-fluff/lib";
-
 use XML::LibXML::Reader;
 use utf8;
 use Data::Dumper;
 use Digest::MD5 qw(md5_base64);
 use Encode qw(encode_utf8);
-use Perlwikipedia;
+use MediaWiki::API;
 
 require '/data/project/perfectbot/Fluffbot/common.pl';
 
-my $bot = Perlwikipedia->new("fluffbot");
-$bot->set_wiki("sv.wikipedia.org", "w");
+my $bot = MediaWiki::API->new();
+$bot->{config}->{api_url} = "https://sv.wikipedia.org/w/api.php";
 
 open(P, "</data/project/perfectbot/.pwd-Fluffbot") || die("Could not find password");
 my $pwd = <P>;
 chomp($pwd);
 
-$bot->login("Fluffbot", $pwd);
+$bot->login({ lgname => "Fluffbot", lgpassword => $pwd}) || die("$bot->{error}->{code}: $bot->{error}->{details}");
 
-my $text_falsepos_org = $bot->get_text("User:Fluffbot/Misstänkt_felaktigt_födelse_eller_dödsår/Falska_träffar");
+my $text_falsepos_org_page = $bot->get_page({title => "User:Fluffbot/Misstänkt_felaktigt_födelse_eller_dödsår/Falska_träffar"});
+my $text_falsepos_org = $text_falsepos_org_page->{'*'};
 my $text_falsepos;
 my $text_falsepos_new;
 ($text_falsepos_new, $text_falsepos) = split(/\<\!\-\-\ MARK\ \-\-\>/, $text_falsepos_org);
@@ -69,21 +68,28 @@ my $f = 0;
 my @articlerows;
 while($r->read()) {
 
-	if($r->name() eq "page") {
-		$f++ if(processPage($r));
-		
-		$c++;
-		warn "$c pages processed, $f suspects found." if($c % 10000 == 0);
-	}
+    if($r->name() eq "page") {
+	$f++ if(processPage($r));
+	
+	$c++;
+	warn "$c pages processed, $f suspects found." if($c % 10000 == 0);
+    }
 }
 $r->close();
 
 foreach my $row (sort @articlerows) {
-	$pageout .= $row . "\n";
+    $pageout .= $row . "\n";
 }
 
 $pageout .= "|}\n";
-$bot->edit("User:Fluffbot/Misstänkt_felaktigt_födelse_eller_dödsår", $pageout, "Uppdaterar lista");
+
+$bot->login({ lgname => "Fluffbot", lgpassword => $pwd}) || die("$bot->{error}->{code}: $bot->{error}->{details}");
+$bot->edit({
+    action => 'edit',
+    title => "User:Fluffbot/Misstänkt_felaktigt_födelse_eller_dödsår",
+    text => $pageout, 
+    summary => "Uppdaterar lista"
+}) || die("$bot->{error}->{code}: $bot->{error}->{details}");
 
 
 $text_falsepos_new .= "<!-- MARK -->\n";
@@ -95,7 +101,12 @@ foreach my $row (split(/\n/, $text_falsepos)) {
 	}
 }
 
-$bot->edit("User:Fluffbot/Misstänkt_felaktigt_födelse_eller_dödsår/Falska_träffar", $text_falsepos_new, "Tar bort falska träffar där checksum har ändrats.");
+$bot->edit({
+    action => 'edit',
+    title => "User:Fluffbot/Misstänkt_felaktigt_födelse_eller_dödsår/Falska_träffar", 
+    text => $text_falsepos_new, 
+    summary => "Tar bort falska träffar där checksum har ändrats."
+}) || die("$bot->{error}->{code}: $bot->{error}->{details}");
 
 
 
