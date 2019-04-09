@@ -146,7 +146,7 @@ foreach my $category (@categories) {
 		if($delay > 0) {
 		    $delay--;
 		    if($delay == 0) {
-			$text .= "|datum=$datum";
+			$text .= "|datum=$datum" unless($text =~ /datum\s*\=/);
 		    }
 		}
 
