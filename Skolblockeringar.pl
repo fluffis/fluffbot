@@ -31,7 +31,7 @@ use JSON::XS;
 
 binmode STDOUT, ":utf8";
 
-require 'common.pl';
+require '/data/project/perfectbot/Fluffbot/common.pl';
 
 my $bot = Perlwikipedia->new("fluffbot");
 
@@ -158,7 +158,7 @@ foreach my $net (sort bynetwork keys %{$networkpages}) {
 	$table .= $_->{page};
     }
     $pageh .= $whois . "\n";
-    $pageh .= "{| class=\"wikitable\"\n! Adress !! Bidrag !! Diskussion !! IP-mall !! # Block !! Blockeringshistorik \n|-\n";
+    $pageh .= "{| class=\"wikitable\"\n! Adress !! Diskussion !! Bidrag !! IP-mall !! # Block !! Blockeringshistorik \n|-\n";
     $pageh .= $table;
     $pageh .= "|}\n\n";
 
