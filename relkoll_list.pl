@@ -42,7 +42,7 @@ foreach my $catpage ($bot->get_all_pages_in_category("Kategori:Relevanskontroll"
 	    $out->{$catpage}{'sffr'} = $atext =~ m/\{\{sffr\}\}/i ? 1 : 0;
 	}
 
-	if($atext =~ m/\{\{relevanskontroll/i || $atext =~ m/\{\{brist/i) {
+	if($atext =~ m/\{\{relevanskontroll/i || $atext =~ m/\{\{brist/i  || $atext =~ m/\{\{rk\|/i || $atext =~ m/\{\{rel\|/i) {
 	    $out->{$catpage}{'templateinserted'} = "$ref->{timestamp_date}&nbsp;$ref->{timestamp_time}";
 	    $out->{$catpage}{'templateinsertedid'} = $ref->{revid};
 	    $out->{$catpage}{'templaterevs'} = -1 if(!defined $out->{$catpage}{'templaterevs'});
@@ -68,7 +68,8 @@ $edittext .= $dt->ymd . " " . $dt->hms;
 $edittext .= qq! UTC'''\n\nListan inneh&aring;ller $antart artiklar\n\n----\n!;
 
 $edittext .= qq!{|class="wikitable sortable"\n|- bgcolor="#CCCCCC"\n!;
-		 $edittext .= "! Artikel || Senast redigerad || Anm&auml;ld f&ouml;r relkoll<ref>Roboten s&ouml;ker igenom de senaste 25 redigeringarna.</ref> || Efter relkoll || SFFR \n|-\n";
+$edittext .= "! Artikel || Senast redigerad || Anm&auml;ld f&ouml;r relkoll<ref>Roboten s&ouml;ker igenom de senaste 25 redigeringarna.</ref> || Efter relkoll || SFFR \n|-\n";
+
 foreach(sort {$out->{$a}{lastedit} <=> $out->{$b}{lastedit}} keys %{$out}) {
     my $artwus = $_;
     $artwus =~ s/\ /\_/g;
