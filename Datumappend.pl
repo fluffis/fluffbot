@@ -208,6 +208,12 @@ foreach my $category (@categories) {
 			push @editedtemplates, $tmpl unless(grep { $_ eq $tmpl } @editedtemplates);
 		    }
 
+		    # Handle {{tmpl|asd|datum={{{1}}}}}
+		    if($text =~ /\{\{$tmpl\s*\|[^\|]+\|\s*(date|datum)\s*\=\s*\{\{\{1\}\}\}/i) {
+			$text =~ s/\|\s*(date|datum)\s*\=\s*\{\{\{1\}\}\}/\|datum\=$datum/;
+			push @editedtemplates, $tmpl unless(grep { $_ eq $tmpl } @editedtemplates);
+		    }
+		    
                     # Handle {{tmpl|asd|datum=November 2013}}
                     if($text =~ /\{\{$tmpl\s*\|[^\|]+\|\s*(date|datum)\s*\=\s*([^\ ]+)\ (\d{4})/i) {
                         my $msel = lc($2);
