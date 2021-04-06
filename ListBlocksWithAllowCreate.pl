@@ -45,7 +45,7 @@ chomp($pwd);
 
 $bot->login("Fluffbot", $pwd);
 
-my $dbh = DBI->connect("dbi:mysql:mysql_read_default_file=/data/project/perfectbot/.my.cnf;host=svwiki.labsdb;database=svwiki_p", undef, undef, {RaiseError => 1, AutoCommit => 1});
+my $dbh = DBI->connect("dbi:mysql:mysql_read_default_file=/data/project/perfectbot/.my.cnf;host=svwiki.analytics.db.svc.wikimedia.cloud;database=svwiki_p", undef, undef, {RaiseError => 1, AutoCommit => 1});
 
 my $sth = $dbh->prepare(qq!SELECT ipb_address, DATE_FORMAT(ipb_timestamp, "%Y-%m-%d") AS ipb_timestamp, ipb_reason, ipb_by_text, DATE_FORMAT(ipb_expiry, "%Y-%m-%d") AS ipb_expiry FROM ipblocks WHERE ipb_user = 0 and ipb_create_account = 0 and DATE_FORMAT(ipb_expiry, "%Y-%m-%d %H:%i:%s") > NOW() ORDER BY ipb_range_start!);
 $sth->execute();

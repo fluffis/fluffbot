@@ -59,7 +59,7 @@ my $dbh;
 my $dbhp;
 
 sub reconnect {
-    $dbh = DBI->connect("dbi:mysql:mysql_read_default_file=/data/project/perfectbot/.my.cnf;host=svwiki.labsdb;database=svwiki_p;mysql_read_timeout=3600", undef, undef, {RaiseError => 1, AutoCommit => 1});
+    $dbh = DBI->connect("dbi:mysql:mysql_read_default_file=/data/project/perfectbot/.my.cnf;host=svwiki.analytics.db.svc.wikimedia.cloud;database=svwiki_p;mysql_read_timeout=3600", undef, undef, {RaiseError => 1, AutoCommit => 1});
 
     $dbhp = DBI->connect("dbi:mysql:mysql_read_default_file=/data/project/perfectbot/.my.cnf;host=tools.labsdb;database=s51592__perfectbot", undef, undef, {RaiseError => 1, AutoCommit => 1});
 }

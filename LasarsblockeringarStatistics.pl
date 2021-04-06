@@ -30,7 +30,7 @@ use DBI;
 use DateTime;
 
 
-my $dbh = DBI->connect("dbi:mysql:mysql_read_default_file=/data/project/perfectbot/.my.cnf;hostname=svwiki.labsdb;database=svwiki_p", undef, undef, {RaiseError => 1, AutoCommit => 1});
+my $dbh = DBI->connect("dbi:mysql:mysql_read_default_file=/data/project/perfectbot/.my.cnf;hostname=svwiki.analytics.db.svc.wikimedia.cloud;database=svwiki_p", undef, undef, {RaiseError => 1, AutoCommit => 1});
 
 my $api = MediaWiki::API->new();
 $api->{config}->{api_url} = 'https://sv.wikipedia.org/w/api.php';

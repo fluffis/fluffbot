@@ -39,7 +39,7 @@ my %ns = $bot->get_namespace_names();
 
 # Hämta folk som 
 
-my $dbh = DBI->connect("dbi:mysql:mysql_read_default_file=/data/project/perfectbot/.my.cnf;hostname=svwiki.labsdb;database=svwiki_p", undef, undef, {RaiseError => 1, AutoCommit => 1});
+my $dbh = DBI->connect("dbi:mysql:mysql_read_default_file=/data/project/perfectbot/.my.cnf;hostname=svwiki.analytics.db.svc.wikimedia.cloud;database=svwiki_p", undef, undef, {RaiseError => 1, AutoCommit => 1});
 
 my $sth = $dbh->prepare(qq!SELECT cat_title FROM category WHERE cat_title RLIKE ? ORDER BY cat_title ASC!);
 $sth->execute(qq!^Födda_[0-9]{4}\$!);
