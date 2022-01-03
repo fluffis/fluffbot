@@ -17,26 +17,32 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-use lib "/data/project/perfectbot/Fluffbot/perlwikipedia-fluff/lib";
+use lib "/data/project/perfectbot/Fluffbot/mediawikiapi/lib";
 
 use DBI;
 use Data::Dumper;
 use Encode;
-use Perlwikipedia;
+use MediaWiki::API;
 
 require '/data/project/perfectbot/Fluffbot/common.pl';
 
-my $bot = Perlwikipedia->new("fluffbot");
-$bot->set_wiki("sv.wikipedia.org", "w");
+my $bot = MediaWiki::API->new({ api_url => "https://sv.wikipedia.org/w/api.php" });
 
 open(P, "</data/project/perfectbot/.pwd-Fluffbot") || die("Could not find password");
 my $pwd = <P>;
 chomp($pwd);
 
-$bot->login("Fluffbot", $pwd);
+$bot->login({ lgname => "Fluffbot", lgpassword => $pwd });
 
-my %ns = $bot->get_namespace_names();
-
+my $nslist = $bot->api({
+    action => "query",
+    meta => "siteinfo",
+    siprop => "namespaces"
+		       });
+my %ns;
+foreach my $nsid (keys %{$nslist->{query}->{namespaces}}) {
+    $ns{$nsid} = $nslist->{query}->{namespaces}->{$nsid}->{'*'};
+}
 
 my $dbh = DBI->connect("dbi:mysql:mysql_read_default_file=/data/project/perfectbot/.my.cnf;hostname=svwiki.labsdb;database=svwiki_p", undef, undef, {RaiseError => 1, AutoCommit => 1});
 
@@ -77,4 +83,10 @@ foreach(sort {$a->[0] cmp $b->[0] } @interesting) {
 }
 
 
-$bot->edit("User:Fluffbot/Personer som \x{e4}r levande d\x{f6}da", Encode::decode("utf-8", $pagetext), "Uppdaterar listan");
+$bot->edit({
+    action => "edit",
+    bot => 1,
+    title => "User:Fluffbot/Personer som \x{e4}r levande d\x{f6}da", 
+    text => Encode::decode("utf-8", $pagetext), 
+    summary => "Uppdaterar listan"
+});

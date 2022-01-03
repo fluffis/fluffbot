@@ -16,28 +16,35 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use lib "/data/project/perfectbot/Fluffbot/perlwikipedia-fluff/lib";
+use lib "/data/project/perfectbot/Fluffbot/mediawikiapi/lib";
 
 use DBI;
 use Data::Dumper;
-use Perlwikipedia;
+use MediaWiki::API;
 
 require '/data/project/perfectbot/Fluffbot/common.pl';
 
-my $bot = Perlwikipedia->new("fluffbot");
-$bot->set_wiki("sv.wikipedia.org", "w");
+my $bot = MediaWiki::API->new({ api_url => "https://sv.wikipedia.org/w/api.php" });
 
 open(P, "</data/project/perfectbot/.pwd-Fluffbot") || die("Could not find password");
 my $pwd = <P>;
 chomp($pwd);
 
-$bot->login("Fluffbot", $pwd);
+$bot->login({ lgname => "Fluffbot", lgpassword => $pwd });
 
-my %ns = $bot->get_namespace_names();
+my $nslist = $bot->api({
+    action => "query",
+    meta => "siteinfo",
+    siprop => "namespaces"
+		       });
+my %ns;
+foreach my $nsid (keys %{$nslist->{query}->{namespaces}}) {
+    $ns{$nsid} = $nslist->{query}->{namespaces}->{$nsid}->{'*'};
+}
 
 my $dbh = DBI->connect("dbi:mysql:mysql_read_default_file=/data/project/perfectbot/.my.cnf;host=svwiki.analytics.db.svc.wikimedia.cloud;database=svwiki_p", undef, undef, {RaiseError => 1, AutoCommit => 1});
 
-my $sth = $dbh->prepare(qq!SELECT cat_title FROM category!);
+my $sth = $dbh->prepare(qq!SELECT cat_title FROM category where cat_id \!= 15060838!);
 $sth->execute();
 
 my @goodcats;
@@ -89,7 +96,13 @@ foreach(sort {$a->[0] <=> $b->[0] } @morethenone) {
     $pagetext .= ")\n";
 }
 
-$bot->edit("User:Fluffbot/D\x{f6}da tv\x{e5} g\x{e5}nger om", utftoiso($pagetext), "Uppdaterar lista");
+$bot->edit({
+    action => "edit",
+    bot => 1,
+    title => "User:Fluffbot/D\x{f6}da tv\x{e5} g\x{e5}nger om", 
+    text => utftoiso($pagetext), 
+    summary => "Uppdaterar lista"
+});
 
 
 #### Och här gör vi samma sak fast med födda också
@@ -134,4 +147,9 @@ foreach(sort {$a->[0] <=> $b->[0] } @morethenone) {
     $pagetext .= ")\n";
 }
 
-$bot->edit("User:Fluffbot/F\x{f6}dda tv\x{e5} g\x{e5}nger om", utftoiso($pagetext), "Uppdaterar lista");
+$bot->edit({
+    action => "edit",
+    title => "User:Fluffbot/F\x{f6}dda tv\x{e5} g\x{e5}nger om", 
+    text => utftoiso($pagetext), 
+    summary => "Uppdaterar lista"
+});

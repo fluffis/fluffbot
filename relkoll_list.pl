@@ -1,9 +1,25 @@
 #!/usr/bin/perl
 
+# Generate list of articles on relkoll.
+# Copyright (C) User:Fluff 2019
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.   
+
 use strict;
 
-use lib "/data/project/perfectbot/Fluffbot/perlwikipedia-fluff/lib";
-use Perlwikipedia;
+use lib "/data/project/perfectbot/Fluffbot/mediawikiapi/lib";
+use MediaWiki::API;
 use Encode;
 use DateTime;
 use Data::Dumper;
@@ -14,25 +30,36 @@ use Data::Dumper;
 # * När artikeln (troligtvis) blev relevanskontrollmärkt.
 # Fluff@svwp.
 
-my $bot = Perlwikipedia->new("Fluffbot");
-$bot->{debug} = 1;
-$bot->set_wiki("sv.wikipedia.org", "w");
+my $bot = MediaWiki::API->new({ api_url => "https://sv.wikipedia.org/w/api.php" });
 
 open(P, "</data/project/perfectbot/.pwd-Fluffbot") || die("Could not find password");
 my $pwd = <P>;
 chomp($pwd);
 
-$bot->login("Fluffbot", $pwd);
+$bot->login({ lgname => "Fluffbot", lgpassword => $pwd });
 
 my $out;
 my $antart = 0;
-foreach my $catpage ($bot->get_all_pages_in_category("Kategori:Relevanskontroll")) {
+
+my @catpages = get_all_pages("Kategori:Relevanskontroll");
+foreach my $catpage (@catpages) {
     $catpage =~ s/amp;//g;
     next if($catpage =~ /^(Kategori\:|Wikipedia\:|Wikipediadiskussion\:|Mall\:Rel|Malldiskussion\:Relevanskontroll)/);
     print "Processing $catpage\n";
     $antart++;
-    foreach my $ref ($bot->get_history($catpage, 25)) {
-	my $atext = $bot->get_text($catpage, $ref->{revid});
+
+    my $pagerevs = $bot->api({
+	action => 'query',
+	prop => 'revisions',
+	titles => $catpage,
+	rvprop => "ids|timestamp|user|comment",
+	rvlimit => 25
+			     });
+    my @pageids = keys %{$pagerevs->{query}->{pages}};
+    foreach my $ref (@{$pagerevs->{query}->{pages}->{$pageids[0]}->{revisions}}) {
+	my $apage = $bot->get_page({ title => $catpage, revid => $ref->{revid} });
+	my $atext = $apage->{'*'};
+	($ref->{timestamp_date}, $ref->{timestamp_time}) = split(/T/, $ref->{timestamp});
 	if(!defined $out->{$catpage}{'lastedit'}) {
 	    # Detta är senaste editen, alltså sätter vi tid och id.
 	    $out->{$catpage}{'lastedit'} = "$ref->{timestamp_date}&nbsp;$ref->{timestamp_time}";
@@ -96,7 +123,29 @@ $edittext .= qq!|}\n!;
 
 $edittext .= qq!\n\n==Not==\n<references/>\n!;
 
-$bot->edit("Wikipedia:Projekt relevanskontroll/Alla artiklar i datumordning", $edittext, "Uppdaterar listan");
+$bot->edit({
+    action => "edit",
+    bot => 1,
+    minor => 1,
+    title => "Wikipedia:Projekt relevanskontroll/Alla artiklar i datumordning", 
+    text => $edittext, 
+    summary => "Uppdaterar listan"
+});
 open(LOGF, ">>relkoll_history.csv");
 print LOGF $dt->ymd . ";$antart\n";
 close(LOGF);
+
+sub get_all_pages {
+    my $category = shift;
+
+    my $res = $bot->list({
+	action => 'query',
+	list => 'categorymembers',
+	cmtitle => $category,
+	cmlimit => 500
+			 });
+    my @pages = map { $_->{'title'} } grep { $_->{ns} != 14 } @$res;
+    push @pages, get_all_pages($_) foreach(map { $_->{title} } grep { $_->{ns} == 14 } @$res);
+	
+    return @pages;
+}

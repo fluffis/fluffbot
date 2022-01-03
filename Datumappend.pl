@@ -17,12 +17,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-use lib "/data/project/perfectbot/Fluffbot/perlwikipedia-fluff/lib";
+use lib "/data/project/perfectbot/Fluffbot/mediawikiapi/lib";
 use warnings;
 use strict;
 
 use Data::Dumper;
-use Perlwikipedia;
+use MediaWiki::API;
 use Text::Diff;
 
 use Getopt::Long;
@@ -31,16 +31,13 @@ binmode STDOUT, 'utf8';
 
 # Fluff@svwp.
 
-my $bot = Perlwikipedia->new("fluffbot");
-
-$bot->set_wiki("sv.wikipedia.org", "w");
-#$bot->{debug} = 1;
+my $bot = MediaWiki::API->new({api_url => "https://sv.wikipedia.org/w/api.php" });
 
 open(P, "</data/project/perfectbot/.pwd-Fluffbot") || die("Could not find password");
 my $pwd = <P>;
 chomp($pwd);
 
-$bot->login("Fluffbot", $pwd);
+$bot->login({ lgname => "Fluffbot", lgpassword => $pwd });
 
 
 my $datum = `/bin/date +"%Y-%m"`;
@@ -86,11 +83,12 @@ my $months_en = {
 };
 
 # Fetch categories and templates
-my $cattext = $bot->get_text("User:Fluffbot/Datumst\x{e4}mpling/Kategorier");
+my $catpage = $bot->get_page({ title => "User:Fluffbot/Datumst\x{e4}mpling/Kategorier" });
+my $cattext = $catpage->{'*'};
 my @categories = grep { $_ !~ /^(Kategori|Category)/i } $cattext =~ /^\*\s*\[\[\:(Kategori|Category)\:([^\]|^\|]+)[\||\]]/img;
 
-
-my $templatetext = $bot->get_text("User:Fluffbot/Datumst\x{e4}mpling/Mallar");
+my $templatepage = $bot->get_page({ title => "User:Fluffbot/Datumst\x{e4}mpling/Mallar" });
+my $templatetext = $templatepage->{'*'};
 my @preloadtemplates = grep {$_ !~ /^(Mall|Template)/i } $templatetext =~ /^\*\s*\[\[\:?(Mall|Template)\:([^\]|^\|]+)[\||\]]/img;
 
 # Get substitutions (listed as [[Mall:Org]] -> [[Mall:Substitute]]
@@ -115,19 +113,34 @@ foreach my $tmpl (@preloadtemplates) {
 }
 
 foreach my $tmpl (@tmpls) {
-    push @tmpls, map {$_->{title} =~ s/^Mall\://; $_->{title} } $bot->what_links_here_opts("Mall:$tmpl", "&namespace=10&hidetrans=1&hidelinks=1");
+    #    push @tmpls, map {$_->{title} =~ s/^Mall\://; $_->{title} } $bot->what_links_here_opts("Mall:$tmpl", "&namespace=10&hidetrans=1&hidelinks=1");
+    my $backlinks = $bot->list({
+	action => 'query',
+	list => 'backlinks',
+	bltitle => "Mall:$tmpl",
+	blnamespace => 10,
+	blfilterredir => 'redirects',
+	bllimit => 5000
+			       });
+
+    push @tmpls, map { $_->{title} =~ s/^Mall\://; $_->{title} } @$backlinks;
 }
 
 foreach my $category (@categories) {
     next if(!$category);
 
-    my @pages = $bot->get_all_pages_in_category("Category:$category");
+    my $pages = $bot->list({
+	action => 'query',
+	list => 'categorymembers',
+	cmtitle => "Category:$category",
+	cmlimit => 500
+			   });
     print "Now scanning category $category\n";
-    if(!$pages[0]) {
+    if(!@$pages[0]) {
 	print "No pages found in category $category\n";
     }
     else {
-	foreach my $page (@pages) {
+	foreach my $page (map { $_->{title} } @$pages) {
 	    my $trackinginfo = "";
 
 	    if($page =~ /^(Mall|Template)/) {
@@ -136,8 +149,8 @@ foreach my $category (@categories) {
 	    }
 
 	    print "Now scanning page $page\n";
-	    
-	    my $orgtext = $bot->get_text($page);
+	    my $orgpage = $bot->get_page({ title => $page });
+	    my $orgtext = $orgpage->{'*'};
 	    my $newtext;
 	    my @editedtemplates;
 	    my $delay = 0;
@@ -311,7 +324,15 @@ foreach my $category (@categories) {
 #		my $input = <STDIN>;
 #		chomp($input);
 #		if($input !~ /^n/i) {		
-		    $bot->edit($page, $newtext, "$editsum");
+		    $bot->edit({
+			action => 'edit',
+			bot => 1,
+			minor => 1,
+			title => $page, 
+			text => $newtext,
+			summary => "$editsum",
+			basetimestamp => $orgpage->{timestamp}
+			       });
 		    sleep 10;
 #		}
 	    }
@@ -326,4 +347,10 @@ foreach my $category (@categories) {
 
 # Uppdatera scannade men ick redigerade
 my $pagetext = "{{User:Fluffbot/Datumst\x{e4}mpling/Resultat-header}}\n\n" . join("\n", map { "* [[:$_]]" } sort @nonedits);
-$bot->edit("User:Fluffbot/Datumst\x{e4}mpling/Resultat", $pagetext, "Resultat av dagens k\x{f6}rning");
+$bot->edit({
+    action => "edit",
+    bot => 1,
+    title => "User:Fluffbot/Datumst\x{e4}mpling/Resultat", 
+    text => $pagetext, 
+    summary => "Resultat av dagens k\x{f6}rning"
+});

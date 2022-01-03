@@ -16,23 +16,22 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use lib "/data/project/perfectbot/Fluffbot/perlwikipedia-fluff/lib";
+use lib "/data/project/perfectbot/Fluffbot/mediawikiapi/lib";
 
 use DBI;
 use Data::Dumper;
 use Encode;
-use Perlwikipedia;
+use MediaWiki::API;
 
 require '/data/project/perfectbot/Fluffbot/common.pl';
 
-my $bot = Perlwikipedia->new("fluffbot");
-$bot->set_wiki("sv.wikipedia.org", "w");
+my $bot = MediaWiki::API->new({ api_url => "https://sv.wikipedia.org/w/api.php" });
 
 open(P, "</data/project/perfectbot/.pwd-Fluffbot") || die("Could not find password");
 my $pwd = <P>;
 chomp($pwd);
 
-$bot->login("Fluffbot", $pwd);
+$bot->login({ lgname => "Fluffbot", lgpassword => $pwd });
 
 
 # Listar artiklar som har en kategori för avlidna men ej för födda.
@@ -87,7 +86,13 @@ foreach(sort yearsort keys %notborn) {
     $pagetext .= $cattext if($i);
 }
 
-$bot->edit("User:Fluffbot/Avlidna men inte f\x{f6}dda", Encode::decode("utf-8", $pagetext), "Uppdaterar listan");
+$bot->edit({
+    action => "edit",
+    bot => 1,
+    title => "User:Fluffbot/Avlidna men inte f\x{f6}dda", 
+    text => Encode::decode("utf-8", $pagetext), 
+    summary => "Uppdaterar listan"
+});
 
 
 
