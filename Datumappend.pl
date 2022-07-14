@@ -155,7 +155,7 @@ foreach my $category (@categories) {
 	    my @editedtemplates;
 	    my $delay = 0;
 
-	    foreach my $text (split(/\}\}/, $orgtext)) {
+	    foreach my $text (split(/\}\}(?!\}+)/, $orgtext)) {
 		if($delay > 0) {
 		    $delay--;
 		    if($delay == 0) {
@@ -279,7 +279,7 @@ foreach my $category (@categories) {
 			    push @editedtemplates, $tmpl unless(grep { $_ eq $tmpl } @editedtemplates);
 			}
 
-			if($tmplmatch !~ /(\|date|\|datum|\|m\x{e5}nad)/ && $delay == 0) {
+			if($tmplmatch !~ /(\|\s*date|\|\s*datum|\|\s*m\x{e5}nad)/ && $delay == 0) {
 			    $text =~ s/\}\}/\|datum\=$datum\}\}/;
 			    push @editedtemplates, $tmpl unless(grep { $_ eq $tmpl } @editedtemplates);
 			}
@@ -295,11 +295,11 @@ foreach my $category (@categories) {
 			push @editedtemplates, $tmpl unless(grep { $_ eq $tmpl } @editedtemplates);
 		    }
 		    else {
-			$trackinginfo .= qq!No match for {{tmpl}}\n!;
+			$trackinginfo .= qq!No match for {{! . $tmpl . qq!}}\n!;
 		    }
 
 		    if(grep { $_ eq $tmpl } keys %tmplsubst) {
-			$text =~ s/\{\{$tmpl\s*(\||\})/\{\{$tmplsubst{$tmpl}$1/i;
+			$text =~ s/\{\{$tmpl(\s*\||\})/\{\{$tmplsubst{$tmpl}$1/i;
 		    }
 		}
 		$newtext .= $text;
